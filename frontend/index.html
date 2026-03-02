@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0070c4">
+    <title>HealDrive — Transport Médical Connecté</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50:  '#f0f7ff',
+                            100: '#e0effe',
+                            200: '#b9dffc',
+                            300: '#7cc5fa',
+                            400: '#36a9f5',
+                            500: '#0c8ee6',
+                            600: '#0070c4',
+                            700: '#01599f',
+                            800: '#064c83',
+                            900: '#0b406d',
+                        },
+                        coral:  { 400: '#f87171', 500: '#ef4444' },
+                        mint:   { 400: '#34d399', 500: '#10b981' },
+                        sand:   { 50: '#fdfcfa', 100: '#f8f5f0', 200: '#f0ebe2' },
+                    },
+                    fontFamily: {
+                        display: ['"DM Serif Display"', 'Georgia', 'serif'],
+                        body:    ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="font-body bg-sand-50 text-gray-800 min-h-screen antialiased">
+
+    <!-- ===== TOP NAVBAR ===== -->
+    <nav id="navbar" class="hidden fixed top-0 left-0 right-0 z-50 navbar-glass">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a id="nav-home-link" href="#/dashboard" class="flex items-center gap-2.5 group">
+                <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                    <i data-lucide="heart-pulse" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="font-display text-xl text-brand-900 tracking-tight">HealDrive</span>
+            </a>
+            <div id="nav-user" class="flex items-center gap-4">
+                <span id="nav-role-badge" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full hidden sm:inline"></span>
+                <span id="nav-username" class="text-sm font-medium text-brand-800 hidden sm:inline"></span>
+                <button id="btn-notif" class="relative p-2 rounded-lg hover:bg-brand-100/60 transition-colors">
+                    <i data-lucide="bell" class="w-5 h-5 text-brand-700"></i>
+                    <span id="notif-badge" class="notif-badge absolute -top-0.5 -right-0.5 w-4 h-4 bg-coral-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">3</span>
+                </button>
+                <div class="h-6 w-px bg-brand-200"></div>
+                <button id="btn-logout" class="flex items-center gap-2 text-sm text-gray-500 hover:text-coral-500 transition-colors font-medium">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Déconnexion</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main id="app-content" class="transition-opacity duration-300"></main>
+
+    <!-- ===== TOAST CONTAINER ===== -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
