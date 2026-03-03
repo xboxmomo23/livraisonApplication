@@ -4,6 +4,8 @@
    Transport Request · Chat · Role-based navigation
    ============================================================ */
 
+const API_URL = "http://localhost:8081/api";
+
 // ————————————————————————————————————————————
 //  1. MOCK DATA — ENRICHED
 // ————————————————————————————————————————————
@@ -277,6 +279,278 @@ function getDashboardRoute() {
     return AppState.currentUser.role === 'CHAUFFEUR' ? '/chauffeur-dashboard' : '/dashboard';
 }
 
+function mapTrajetFromApi(trajet) {
+    return {
+        id: trajet.id ? String(trajet.id) : null,
+        patient_id: trajet.patientId ? String(trajet.patientId) : null,
+        chauffeur_id: trajet.chauffeurId ? String(trajet.chauffeurId) : null,
+        depart: trajet.departAdresse || '',
+        destination: trajet.destinationAdresse || '',
+        date: trajet.dateTrajet || '',
+        heure: trajet.heureTrajet ? String(trajet.heureTrajet).slice(0, 5) : '',
+        type_vehicule: trajet.typeVehicule || '',
+        statut: trajet.statut || 'EN_ATTENTE',
+        prescription_id: trajet.prescriptionId ? String(trajet.prescriptionId) : null,
+        distance_km: trajet.distanceKm ?? null,
+        tarif_estime: trajet.prixEstime != null ? Number(trajet.prixEstime) : null,
+        patient_nom: [trajet.patientPrenom, trajet.patientNom].filter(Boolean).join(' ').trim(),
+        chauffeur_nom: [trajet.chauffeurPrenom, trajet.chauffeurNom].filter(Boolean).join(' ').trim(),
+    };
+}
+
+async function login(email, motDePasse, role) {
+    try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, motDePasse }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Identifiants invalides.');
+        }
+
+        const data = await response.json();
+        if (role && data.role !== role) {
+            throw new Error(`Ce compte est de type ${data.role}, pas ${role}.`);
+        }
+
+        const user = {
+            id: data.id ? String(data.id) : null,
+            profilId: data.profilId ? String(data.profilId) : null,
+            email: data.email,
+            nom: [data.prenom, data.nom].filter(Boolean).join(' ').trim(),
+            telephone: data.telephone,
+            role: data.role,
+        };
+
+        AppState.currentUser = user;
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        return user;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors de la connexion.', 'error');
+        throw error;
+    }
+}
+
+async function chargerTrajetsPatient(id) {
+    try {
+        if (!id) {
+            AppState.trajets = [];
+            return [];
+        }
+
+        const response = await fetch(`${API_URL}/trajets/patient/${id}`);
+        if (!response.ok) {
+            throw new Error('Impossible de charger les trajets patient.');
+        }
+
+        const data = await response.json();
+        const trajets = Array.isArray(data) ? data.map(mapTrajetFromApi) : [];
+        AppState.trajets = trajets;
+        return trajets;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors du chargement des trajets patient.', 'error');
+        throw error;
+    }
+}
+
+async function chargerTrajetsDisponibles() {
+    try {
+        const response = await fetch(`${API_URL}/trajets/disponibles`);
+        if (!response.ok) {
+            throw new Error('Impossible de charger les trajets disponibles.');
+        }
+
+        const data = await response.json();
+        const trajets = Array.isArray(data) ? data.map(mapTrajetFromApi) : [];
+
+        const byId = new Map(AppState.trajets.map(t => [t.id, t]));
+        trajets.forEach(t => byId.set(t.id, t));
+        AppState.trajets = [...byId.values()];
+
+        return trajets;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors du chargement des trajets disponibles.', 'error');
+        throw error;
+    }
+}
+
+async function mettreAJourStatut(id, nouveauStatut, chauffeurId = null, commentaire = '') {
+    try {
+        const response = await fetch(`${API_URL}/trajets/${id}/statut`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nouveauStatut,
+                chauffeurId: chauffeurId || undefined,
+                commentaire: commentaire || undefined,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Impossible de mettre à jour le statut du trajet.');
+        }
+
+        const data = await response.json();
+        const updated = mapTrajetFromApi(data);
+        const i = AppState.trajets.findIndex(t => t.id === updated.id);
+        if (i >= 0) {
+            AppState.trajets[i] = updated;
+        } else {
+            AppState.trajets.unshift(updated);
+        }
+
+        return updated;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors de la mise à jour du statut.', 'error');
+        throw error;
+    }
+}
+
+function mapMessageFromApi(message) {
+    return {
+        id: message.id ? String(message.id) : ('msg-' + Date.now()),
+        trajet_id: message.trajetId ? String(message.trajetId) : null,
+        expediteur_id: message.expediteurId ? String(message.expediteurId) : null,
+        contenu: message.contenu || '',
+        timestamp: message.dateEnvoi || nowISO(),
+        lu: message.lu ?? false,
+    };
+}
+
+function mapNotificationFromApi(notification) {
+    return {
+        id: notification.id ? String(notification.id) : ('notif-' + Date.now()),
+        message: notification.message || notification.titre || 'Notification',
+        time: notification.dateCreation ? formatTime(notification.dateCreation) : 'À l’instant',
+        read: notification.lu ?? false,
+    };
+}
+
+async function chargerMessagesTrajet(trajetId) {
+    try {
+        const response = await fetch(`${API_URL}/messages/trajet/${trajetId}`);
+        if (!response.ok) {
+            throw new Error('Impossible de charger les messages du trajet.');
+        }
+
+        const data = await response.json();
+        const messages = Array.isArray(data) ? data.map(mapMessageFromApi) : [];
+        AppState.messages[trajetId] = messages;
+        return messages;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors du chargement des messages.', 'error');
+        throw error;
+    }
+}
+
+async function envoyerMessage(trajetId, expediteurId, contenu) {
+    try {
+        const response = await fetch(`${API_URL}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                trajetId,
+                expediteurId,
+                contenu,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Impossible d’envoyer le message.');
+        }
+
+        const data = await response.json();
+        const message = mapMessageFromApi(data);
+        if (!AppState.messages[trajetId]) AppState.messages[trajetId] = [];
+        AppState.messages[trajetId].push(message);
+        return message;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors de l’envoi du message.', 'error');
+        throw error;
+    }
+}
+
+async function chargerNotificationsUtilisateur(userId) {
+    try {
+        const response = await fetch(`${API_URL}/notifications/utilisateur/${userId}`);
+        if (!response.ok) {
+            throw new Error('Impossible de charger les notifications.');
+        }
+
+        const data = await response.json();
+        const notifications = Array.isArray(data) ? data.map(mapNotificationFromApi) : [];
+        AppState.notifications = notifications;
+        return notifications;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors du chargement des notifications.', 'error');
+        throw error;
+    }
+}
+
+async function marquerNotificationLue(id) {
+    try {
+        const response = await fetch(`${API_URL}/notifications/${id}/lu`, {
+            method: 'PUT',
+        });
+
+        if (!response.ok) {
+            throw new Error('Impossible de marquer la notification comme lue.');
+        }
+
+        const notif = AppState.notifications.find(n => n.id === id);
+        if (notif) notif.read = true;
+        return true;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors de la mise à jour des notifications.', 'error');
+        throw error;
+    }
+}
+
+async function gererClicNotifications() {
+    if (!AppState.currentUser) return;
+
+    try {
+        const userId = AppState.currentUser.id;
+        const notifications = await chargerNotificationsUtilisateur(userId);
+        const unread = notifications.filter(n => !n.read);
+
+        if (unread.length === 0) {
+            toast('Aucune nouvelle notification.', 'info');
+            return;
+        }
+
+        await Promise.all(unread.map(n => marquerNotificationLue(n.id)));
+        document.getElementById('notif-badge').style.display = 'none';
+        toast(`${unread.length} notification(s) marquée(s) comme lue(s).`, 'success');
+    } catch (error) {
+        // toast already handled in API helpers
+    }
+}
+
+async function creerDemande(payload) {
+    try {
+        const response = await fetch(`${API_URL}/trajets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            throw new Error('Impossible de créer la demande de trajet.');
+        }
+
+        const data = await response.json();
+        const trajet = mapTrajetFromApi(data);
+        AppState.trajets.unshift(trajet);
+        return trajet;
+    } catch (error) {
+        toast(error.message || 'Erreur serveur lors de la création de la demande.', 'error');
+        throw error;
+    }
+}
+
 
 // ————————————————————————————————————————————
 //  4. HASH ROUTER
@@ -367,16 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
         navigate('/login');
     });
 
-    document.getElementById('btn-notif').addEventListener('click', () => {
-        const unread = AppState.notifications.filter(n => !n.read).length;
-        if (unread > 0) {
-            AppState.notifications.forEach(n => n.read = true);
-            document.getElementById('notif-badge').style.display = 'none';
-            toast(`${unread} notification(s) marquée(s) comme lue(s).`, 'success');
-        } else {
-            toast('Aucune nouvelle notification.', 'info');
-        }
-    });
+    document.getElementById('btn-notif').addEventListener('click', gererClicNotifications);
 
     handleRoute();
 });
@@ -443,24 +708,21 @@ function renderLogin(container) {
         });
     });
 
-    container.querySelector('#btn-login').addEventListener('click', () => {
+    container.querySelector('#btn-login').addEventListener('click', async () => {
         const role = container.querySelector('input[name="role"]:checked').value;
         const email = emailInput.value.trim();
+        const motDePasse = container.querySelector('#login-password').value;
 
         if (!email) { toast('Veuillez saisir un email.', 'error'); return; }
+        if (!motDePasse) { toast('Veuillez saisir un mot de passe.', 'error'); return; }
 
-        if (role === 'PATIENT') {
-            AppState.currentUser = { ...MOCK_PATIENTS[0] };
-        } else {
-            AppState.currentUser = {
-                ...MOCK_CHAUFFEURS[0],
-                vehicule: { ...MOCK_CHAUFFEURS[0].vehicule },
-                position: { ...MOCK_CHAUFFEURS[0].position },
-            };
+        try {
+            await login(email, motDePasse, role);
+            toast(`Bienvenue, ${AppState.currentUser.nom} !`, 'success');
+            navigate(getDashboardRoute());
+        } catch (error) {
+            toast(error.message || 'Échec de la connexion.', 'error');
         }
-
-        toast(`Bienvenue, ${AppState.currentUser.nom} !`, 'success');
-        navigate(getDashboardRoute());
     });
 }
 
@@ -469,9 +731,23 @@ function renderLogin(container) {
 //  7. VIEW: PATIENT DASHBOARD
 // ————————————————————————————————————————————
 
-function renderPatientDashboard(container) {
+function renderPatientDashboard(container, params, skipRemoteLoad = false) {
     const user = AppState.currentUser;
-    const trajets = AppState.trajets.filter(t => t.patient_id === user.id);
+    if (!skipRemoteLoad) {
+        container.innerHTML = `<div class="pt-24 text-center text-gray-400">Chargement des trajets...</div>`;
+        chargerTrajetsPatient(user.profilId || user.id)
+            .then(() => {
+                renderPatientDashboard(container, params, true);
+                refreshIcons();
+            })
+            .catch((error) => {
+                toast(error.message || 'Erreur de chargement.', 'error');
+                container.innerHTML = `<div class="pt-24 text-center text-coral-500">Impossible de charger vos trajets.</div>`;
+            });
+        return;
+    }
+
+    const trajets = AppState.trajets.filter(t => t.patient_id === (user.profilId || user.id));
     const counts = {
         EN_ATTENTE: trajets.filter(t => t.statut === 'EN_ATTENTE').length,
         EN_COURS:   trajets.filter(t => t.statut === 'EN_COURS').length,
@@ -580,9 +856,23 @@ function cancelTrajet(id) {
 //  8. VIEW: CHAUFFEUR DASHBOARD
 // ————————————————————————————————————————————
 
-function renderChauffeurDashboard(container) {
+function renderChauffeurDashboard(container, params, skipRemoteLoad = false) {
     const user = AppState.currentUser;
-    const vehType = user.vehicule.type;
+    const vehType = user.vehicule?.type || 'VSL';
+
+    if (!skipRemoteLoad) {
+        container.innerHTML = `<div class="pt-24 text-center text-gray-400">Chargement des courses...</div>`;
+        chargerTrajetsDisponibles()
+            .then(() => {
+                renderChauffeurDashboard(container, params, true);
+                refreshIcons();
+            })
+            .catch((error) => {
+                toast(error.message || 'Erreur de chargement.', 'error');
+                container.innerHTML = `<div class="pt-24 text-center text-coral-500">Impossible de charger les courses disponibles.</div>`;
+            });
+        return;
+    }
 
     // Courses available for this chauffeur (matching vehicle type, EN_ATTENTE)
     const available = AppState.trajets.filter(t =>
@@ -591,12 +881,12 @@ function renderChauffeurDashboard(container) {
 
     // My active courses
     const myCourses = AppState.trajets.filter(t =>
-        t.chauffeur_id === user.id && (t.statut === 'ACCEPTE' || t.statut === 'EN_COURS')
+        t.chauffeur_id === (user.profilId || user.id) && (t.statut === 'ACCEPTE' || t.statut === 'EN_COURS')
     );
 
     // My completed
     const completed = AppState.trajets.filter(t =>
-        t.chauffeur_id === user.id && t.statut === 'TERMINE'
+        t.chauffeur_id === (user.profilId || user.id) && t.statut === 'TERMINE'
     );
 
     container.innerHTML = `
@@ -797,44 +1087,48 @@ function chauffeurCompletedRow(t, index) {
 //  9. CHAUFFEUR ACTIONS
 // ————————————————————————————————————————————
 
-function accepterCourse(trajetId) {
-    const t = AppState.trajets.find(tr => tr.id === trajetId);
-    if (!t) return;
+async function accepterCourse(trajetId) {
+    try {
+        const t = await mettreAJourStatut(trajetId, 'ACCEPTE', AppState.currentUser.profilId || AppState.currentUser.id);
 
-    t.statut = 'ACCEPTE';
-    t.chauffeur_id = AppState.currentUser.id;
+        // Seed initial chat message
+        if (!AppState.messages[trajetId]) AppState.messages[trajetId] = [];
+        AppState.messages[trajetId].push({
+            id: 'auto-' + Date.now(),
+            trajet_id: trajetId,
+            expediteur_id: AppState.currentUser.id,
+            contenu: `Bonjour, j'ai accepté votre course. Je serai en ${VEHICULE_LABELS[t.type_vehicule]?.label || 'véhicule médical'}. À bientôt !`,
+            timestamp: nowISO(),
+        });
 
-    // Seed initial chat message
-    if (!AppState.messages[trajetId]) AppState.messages[trajetId] = [];
-    AppState.messages[trajetId].push({
-        id: 'auto-' + Date.now(),
-        trajet_id: trajetId,
-        expediteur_id: AppState.currentUser.id,
-        contenu: `Bonjour, j'ai accepté votre course. Je serai en ${VEHICULE_LABELS[t.type_vehicule].label} (${AppState.currentUser.vehicule.immatriculation}). À bientôt !`,
-        timestamp: nowISO(),
-    });
-
-    toast('Course acceptée !', 'success');
-    renderChauffeurDashboard(document.getElementById('app-content'));
-    refreshIcons();
+        toast('Course acceptée !', 'success');
+        renderChauffeurDashboard(document.getElementById('app-content'), null, true);
+        refreshIcons();
+    } catch (error) {
+        toast(error.message || 'Impossible d’accepter la course.', 'error');
+    }
 }
 
-function demarrerCourse(trajetId) {
-    const t = AppState.trajets.find(tr => tr.id === trajetId);
-    if (!t) return;
-    t.statut = 'EN_COURS';
-    toast('Course démarrée. Bonne route !', 'success');
-    renderChauffeurDashboard(document.getElementById('app-content'));
-    refreshIcons();
+async function demarrerCourse(trajetId) {
+    try {
+        await mettreAJourStatut(trajetId, 'EN_COURS', AppState.currentUser.profilId || AppState.currentUser.id);
+        toast('Course démarrée. Bonne route !', 'success');
+        renderChauffeurDashboard(document.getElementById('app-content'), null, true);
+        refreshIcons();
+    } catch (error) {
+        toast(error.message || 'Impossible de démarrer la course.', 'error');
+    }
 }
 
-function terminerCourse(trajetId) {
-    const t = AppState.trajets.find(tr => tr.id === trajetId);
-    if (!t) return;
-    t.statut = 'TERMINE';
-    toast('Course terminée. Merci !', 'success');
-    renderChauffeurDashboard(document.getElementById('app-content'));
-    refreshIcons();
+async function terminerCourse(trajetId) {
+    try {
+        await mettreAJourStatut(trajetId, 'TERMINE', AppState.currentUser.profilId || AppState.currentUser.id);
+        toast('Course terminée. Merci !', 'success');
+        renderChauffeurDashboard(document.getElementById('app-content'), null, true);
+        refreshIcons();
+    } catch (error) {
+        toast(error.message || 'Impossible de terminer la course.', 'error');
+    }
 }
 
 
@@ -985,36 +1279,42 @@ function renderChat(container, params) {
     const messagesContainer = container.querySelector('#chat-messages');
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
+    chargerMessagesTrajet(trajetId)
+        .then((remoteMessages) => {
+            messagesContainer.innerHTML = remoteMessages.length === 0
+                ? `<div class="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm">
+                       <i data-lucide="message-circle" class="w-10 h-10 mb-3 opacity-30"></i>
+                       <p>Aucun message. Commencez la conversation !</p>
+                   </div>`
+                : remoteMessages.map(m => chatBubble(m, user.id)).join('');
+            refreshIcons();
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        })
+        .catch(() => {
+            // toast already handled in chargerMessagesTrajet
+        });
+
     // Send message
     const input = container.querySelector('#chat-input');
     const sendBtn = container.querySelector('#btn-send-chat');
 
-    function sendMessage() {
+    async function sendMessage() {
         const text = input.value.trim();
         if (!text) return;
 
-        const msg = {
-            id: 'msg-' + Date.now(),
-            trajet_id: trajetId,
-            expediteur_id: user.id,
-            contenu: text,
-            timestamp: nowISO(),
-        };
+        try {
+            const msg = await envoyerMessage(trajetId, user.id, text);
 
-        if (!AppState.messages[trajetId]) AppState.messages[trajetId] = [];
-        AppState.messages[trajetId].push(msg);
+            const wasEmpty = messagesContainer.querySelector('.flex-1.flex.flex-col');
+            if (wasEmpty) wasEmpty.remove();
 
-        // Append bubble to DOM (no re-render for smooth UX)
-        const wasEmpty = messagesContainer.querySelector('.flex-1.flex.flex-col');
-        if (wasEmpty) wasEmpty.remove();
-
-        messagesContainer.insertAdjacentHTML('beforeend', chatBubble(msg, user.id));
-        refreshIcons();
-        input.value = '';
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-        // Simulate auto-reply after 2s
-        simulateReply(trajetId, user.id, messagesContainer);
+            messagesContainer.insertAdjacentHTML('beforeend', chatBubble(msg, user.id));
+            refreshIcons();
+            input.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } catch (error) {
+            // toast already handled in envoyerMessage
+        }
     }
 
     sendBtn.addEventListener('click', sendMessage);
@@ -1319,76 +1619,32 @@ function renderNewRequest(container) {
     }
 
     // Submit
-    container.querySelector('#btn-submit').addEventListener('click', () => {
+    container.querySelector('#btn-submit').addEventListener('click', async () => {
         const veh = container.querySelector('input[name="vehicule"]:checked').value;
         const depart = container.querySelector('#req-depart').value;
         const dest = container.querySelector('#req-dest').value;
         const date = container.querySelector('#req-date').value;
         const heure = container.querySelector('#req-heure').value;
-        const medecin = container.querySelector('#req-medecin').value;
-        const etab = container.querySelector('#req-etab').value;
-        const motif = container.querySelector('#req-motif').value;
+        const user = AppState.currentUser;
 
-        // Create prescription
-        const prescId = 'presc-' + Date.now();
-        MOCK_PRESCRIPTIONS.push({
-            id: prescId,
-            patient_id: AppState.currentUser.id,
-            medecin: medecin,
-            etablissement: etab || depart,
-            type_vehicule_requis: veh,
-            date_emission: todayISO(),
-            date_validite: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            motif: motif || 'Transport médical',
-            fichier: fileInput.files[0] ? fileInput.files[0].name : null,
-        });
+        if (!depart || !dest || !date || !heure || !veh) {
+            toast('Veuillez remplir tous les champs obligatoires.', 'error');
+            return;
+        }
 
-        // Create trajet
-        const newTrajet = {
-            id: 'trj-' + Date.now(),
-            patient_id: AppState.currentUser.id,
-            chauffeur_id: null,
-            depart: depart,
-            destination: dest,
-            date: date,
-            heure: heure,
-            type_vehicule: veh,
-            statut: 'EN_ATTENTE',
-            prescription_id: prescId,
-            distance_km: +(Math.random() * 15 + 1).toFixed(1),
-            tarif_estime: +(Math.random() * 40 + 10).toFixed(2),
-        };
-
-        AppState.trajets.unshift(newTrajet);
-        toast('Demande envoyée ! Recherche de chauffeurs en cours...', 'success');
-        navigate('/dashboard');
-
-        // Simulate acceptance after 5s
-        setTimeout(() => {
-            const t = AppState.trajets.find(tr => tr.id === newTrajet.id);
-            if (t && t.statut === 'EN_ATTENTE') {
-                // Find matching chauffeur
-                const match = MOCK_CHAUFFEURS.find(c => c.vehicule.type === veh && c.disponible);
-                t.statut = 'ACCEPTE';
-                t.chauffeur_id = match ? match.id : 'chf-001';
-
-                const chName = match ? match.nom : 'Philippe Lefebvre';
-                toast(`${chName} a accepté votre course !`, 'success');
-
-                // Seed chat
-                AppState.messages[newTrajet.id] = [{
-                    id: 'auto-' + Date.now(),
-                    trajet_id: newTrajet.id,
-                    expediteur_id: t.chauffeur_id,
-                    contenu: `Bonjour ! J'ai accepté votre transport. Je serai en ${VEHICULE_LABELS[veh].label}. N'hésitez pas à me contacter ici si besoin.`,
-                    timestamp: nowISO(),
-                }];
-
-                if (window.location.hash === '#/dashboard') {
-                    renderPatientDashboard(document.getElementById('app-content'));
-                    refreshIcons();
-                }
-            }
-        }, 5000);
+        try {
+            await creerDemande({
+                depart,
+                destination: dest,
+                date,
+                heure,
+                type_vehicule: veh,
+                patientId: user.profilId || user.id,
+            });
+            toast('Demande envoyée !', 'success');
+            navigate('/dashboard');
+        } catch (error) {
+            // toast already handled in creerDemande
+        }
     });
 }
