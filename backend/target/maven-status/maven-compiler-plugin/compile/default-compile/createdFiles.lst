@@ -7,6 +7,7 @@ com/healdrive/dto/LoginResponse$LoginResponseBuilder.class
 com/healdrive/repository/ProfilPatientRepository.class
 com/healdrive/dto/DashboardStats$DashboardStatsBuilder.class
 com/healdrive/dto/MessageResponse.class
+com/healdrive/config/CorsConfig.class
 com/healdrive/model/Utilisateur$UtilisateurBuilder.class
 com/healdrive/model/ProfilPatient.class
 com/healdrive/model/Message.class
@@ -41,6 +42,7 @@ com/healdrive/model/Prescription$PrescriptionBuilder.class
 com/healdrive/dto/RegisterRequest.class
 com/healdrive/model/Prescription.class
 com/healdrive/dto/MessageResponse$MessageResponseBuilder.class
+com/healdrive/dto/CreateTrajetRequest.class
 com/healdrive/dto/LoginResponse.class
 com/healdrive/dto/TrajetResponse.class
 com/healdrive/repository/ProfilChauffeurRepository.class

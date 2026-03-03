@@ -300,7 +300,9 @@ function mapTrajetFromApi(trajet) {
 
 async function login(email, motDePasse, role) {
     try {
-        const response = await fetch(`${API_URL}/auth/login`, {
+        const url = `${API_URL}/auth/login`;
+        console.log('[API] POST', url);
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, motDePasse }),
@@ -335,7 +337,10 @@ async function login(email, motDePasse, role) {
 
 async function sInscrire(userData) {
     try {
-        const response = await fetch(`${API_URL}/auth/register`, {
+        const url = `${API_URL}/auth/register`;
+        console.log('[API] POST', url);
+        console.log('[API] PAYLOAD', userData);
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData),
@@ -361,7 +366,9 @@ async function chargerTrajetsPatient(id) {
             return [];
         }
 
-        const response = await fetch(`${API_URL}/trajets/patient/${id}`);
+        const url = `${API_URL}/trajets/patient/${id}`;
+        console.log('[API] GET', url);
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Impossible de charger les trajets patient.');
         }
@@ -378,13 +385,16 @@ async function chargerTrajetsPatient(id) {
 
 async function chargerTrajetsDisponibles() {
     try {
-        const response = await fetch(`${API_URL}/trajets/disponibles`);
+        const url = `${API_URL}/trajets/disponibles`;
+        console.log('[API] GET', url);
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Impossible de charger les trajets disponibles.');
         }
 
         const data = await response.json();
         const trajets = Array.isArray(data) ? data.map(mapTrajetFromApi) : [];
+        console.log('[API] RESULT /trajets/disponibles', trajets);
 
         const byId = new Map(AppState.trajets.map(t => [t.id, t]));
         trajets.forEach(t => byId.set(t.id, t));
@@ -392,6 +402,7 @@ async function chargerTrajetsDisponibles() {
 
         return trajets;
     } catch (error) {
+        console.error('[API] ERROR /trajets/disponibles', error);
         toast(error.message || 'Erreur serveur lors du chargement des trajets disponibles.', 'error');
         throw error;
     }
@@ -399,7 +410,9 @@ async function chargerTrajetsDisponibles() {
 
 async function mettreAJourStatut(id, nouveauStatut, chauffeurId = null, commentaire = '') {
     try {
-        const response = await fetch(`${API_URL}/trajets/${id}/statut`, {
+        const url = `${API_URL}/trajets/${id}/statut`;
+        console.log('[API] PUT', url);
+        const response = await fetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -451,7 +464,9 @@ function mapNotificationFromApi(notification) {
 
 async function chargerMessagesTrajet(trajetId) {
     try {
-        const response = await fetch(`${API_URL}/messages/trajet/${trajetId}`);
+        const url = `${API_URL}/messages/trajet/${trajetId}`;
+        console.log('[API] GET', url);
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Impossible de charger les messages du trajet.');
         }
@@ -468,7 +483,9 @@ async function chargerMessagesTrajet(trajetId) {
 
 async function envoyerMessage(trajetId, expediteurId, contenu) {
     try {
-        const response = await fetch(`${API_URL}/messages`, {
+        const url = `${API_URL}/messages`;
+        console.log('[API] POST', url);
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -495,7 +512,9 @@ async function envoyerMessage(trajetId, expediteurId, contenu) {
 
 async function chargerNotificationsUtilisateur(userId) {
     try {
-        const response = await fetch(`${API_URL}/notifications/utilisateur/${userId}`);
+        const url = `${API_URL}/notifications/utilisateur/${userId}`;
+        console.log('[API] GET', url);
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Impossible de charger les notifications.');
         }
@@ -512,7 +531,9 @@ async function chargerNotificationsUtilisateur(userId) {
 
 async function marquerNotificationLue(id) {
     try {
-        const response = await fetch(`${API_URL}/notifications/${id}/lu`, {
+        const url = `${API_URL}/notifications/${id}/lu`;
+        console.log('[API] PUT', url);
+        const response = await fetch(url, {
             method: 'PUT',
         });
 
@@ -552,7 +573,10 @@ async function gererClicNotifications() {
 
 async function creerDemande(payload) {
     try {
-        const response = await fetch(`${API_URL}/trajets`, {
+        const url = `${API_URL}/trajets`;
+        console.log('[API] POST', url);
+        console.log('[API] PAYLOAD', payload);
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -715,12 +739,27 @@ function renderLogin(container) {
 
             <p class="input-label text-center mb-3">Pas encore de compte ?</p>
             <div class="mb-3">
-                <label class="input-label" for="register-nom">Nom complet</label>
-                <input class="input-field" type="text" id="register-nom" placeholder="Ex: Marie Dupont">
+                <label class="input-label" for="register-nom">Nom</label>
+                <input class="input-field" type="text" id="register-nom" placeholder="Ex: Dupont">
+            </div>
+            <div class="mb-3">
+                <label class="input-label" for="register-prenom">Prénom</label>
+                <input class="input-field" type="text" id="register-prenom" placeholder="Ex: Marie">
             </div>
             <div class="mb-3">
                 <label class="input-label" for="register-email">Email</label>
                 <input class="input-field" type="email" id="register-email" placeholder="exemple@email.com">
+            </div>
+            <div class="mb-3">
+                <label class="input-label" for="register-role">Rôle</label>
+                <select class="input-field" id="register-role">
+                    <option value="PATIENT" selected>PATIENT</option>
+                    <option value="CHAUFFEUR">CHAUFFEUR</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="input-label" for="register-telephone">Téléphone</label>
+                <input class="input-field" type="tel" id="register-telephone" placeholder="Ex: 0611223344">
             </div>
             <div class="mb-4">
                 <label class="input-label" for="register-password">Mot de passe</label>
@@ -768,20 +807,30 @@ function renderLogin(container) {
     });
 
     container.querySelector('#btn-register').addEventListener('click', async () => {
-        const role = container.querySelector('input[name="role"]:checked').value;
+        const role = container.querySelector('#register-role').value;
         const nom = container.querySelector('#register-nom').value.trim();
+        const prenom = container.querySelector('#register-prenom').value.trim();
         const email = container.querySelector('#register-email').value.trim();
+        const telephone = container.querySelector('#register-telephone').value.trim();
         const motDePasse = container.querySelector('#register-password').value;
 
-        if (!nom || !email || !motDePasse) {
+        if (!nom || !prenom || !email || !motDePasse || !role || !telephone) {
             toast('Veuillez remplir tous les champs d’inscription.', 'error');
             return;
         }
 
         try {
-            await sInscrire({ nom, email, motDePasse, role });
+            await sInscrire({
+                nom,
+                prenom,
+                email,
+                mot_de_passe: motDePasse,
+                role,
+                telephone,
+            });
             emailInput.value = email;
             loginPasswordInput.value = motDePasse;
+            navigate('/login');
         } catch (error) {
             // toast deja gere dans sInscrire
         }
@@ -920,7 +969,7 @@ function cancelTrajet(id) {
 
 function renderChauffeurDashboard(container, params, skipRemoteLoad = false) {
     const user = AppState.currentUser;
-    const vehType = user.vehicule?.type || 'VSL';
+    const vehType = user.vehicule?.type || null;
 
     if (!skipRemoteLoad) {
         container.innerHTML = `<div class="pt-24 text-center text-gray-400">Chargement des courses...</div>`;
@@ -938,7 +987,7 @@ function renderChauffeurDashboard(container, params, skipRemoteLoad = false) {
 
     // Courses available for this chauffeur (matching vehicle type, EN_ATTENTE)
     const available = AppState.trajets.filter(t =>
-        t.statut === 'EN_ATTENTE' && t.type_vehicule === vehType
+        t.statut === 'EN_ATTENTE' && (!vehType || t.type_vehicule === vehType)
     );
 
     // My active courses
@@ -960,8 +1009,8 @@ function renderChauffeurDashboard(container, params, skipRemoteLoad = false) {
                 <p class="text-sm text-mint-500 font-semibold tracking-wide uppercase mb-1">Espace Chauffeur</p>
                 <h2 class="section-title">Bonjour, ${user.nom.split(' ')[0]}</h2>
                 <p class="text-gray-400 text-sm mt-1 flex items-center gap-2">
-                    <i data-lucide="${VEHICULE_LABELS[vehType].icon}" class="w-4 h-4 ${VEHICULE_LABELS[vehType].color}"></i>
-                    ${VEHICULE_LABELS[vehType].label} · ${user.vehicule.immatriculation}
+                    <i data-lucide="${VEHICULE_LABELS[vehType || 'VSL'].icon}" class="w-4 h-4 ${VEHICULE_LABELS[vehType || 'VSL'].color}"></i>
+                    ${VEHICULE_LABELS[vehType || 'VSL'].label} · ${user.vehicule?.immatriculation || 'Immatriculation non renseignée'}
                     · <span class="text-mint-500 font-medium">Disponible</span>
                 </p>
             </div>
@@ -994,7 +1043,7 @@ function renderChauffeurDashboard(container, params, skipRemoteLoad = false) {
                 <h3 class="font-semibold text-gray-800 text-[15px] flex items-center gap-2">
                     <i data-lucide="radio" class="w-4 h-4 text-brand-500"></i>
                     Courses disponibles
-                    <span class="text-xs font-normal text-gray-400">(${VEHICULE_LABELS[vehType].label})</span>
+                    <span class="text-xs font-normal text-gray-400">(${vehType ? VEHICULE_LABELS[vehType].label : 'Tous véhicules'})</span>
                 </h3>
                 <span class="text-xs text-gray-400">${available.length} résultat(s)</span>
             </div>

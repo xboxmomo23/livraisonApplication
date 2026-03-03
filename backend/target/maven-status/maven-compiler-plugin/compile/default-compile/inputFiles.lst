@@ -14,6 +14,7 @@
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/Message.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/service/TrajetService.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/RegisterRequest.java
+/home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/CreateTrajetRequest.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/controller/AuthController.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/enums/RoleUtilisateur.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/MessageRepository.java
@@ -27,6 +28,7 @@
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/ProfilPatientRepository.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/NotificationRepository.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/TrajetRepository.java
+/home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/config/CorsConfig.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/HistoriqueStatut.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/service/MessageService.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/StatutUpdateRequest.java

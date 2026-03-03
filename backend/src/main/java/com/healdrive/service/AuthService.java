@@ -3,11 +3,16 @@ package com.healdrive.service;
 import com.healdrive.dto.LoginRequest;
 import com.healdrive.dto.LoginResponse;
 import com.healdrive.dto.RegisterRequest;
+import com.healdrive.model.ProfilChauffeur;
+import com.healdrive.model.ProfilPatient;
 import com.healdrive.model.Utilisateur;
+import com.healdrive.model.Vehicule;
 import com.healdrive.model.enums.RoleUtilisateur;
+import com.healdrive.model.enums.TypeVehicule;
 import com.healdrive.repository.ProfilChauffeurRepository;
 import com.healdrive.repository.ProfilPatientRepository;
 import com.healdrive.repository.UtilisateurRepository;
+import com.healdrive.repository.VehiculeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +26,7 @@ public class AuthService {
     private final UtilisateurRepository utilisateurRepository;
     private final ProfilPatientRepository profilPatientRepository;
     private final ProfilChauffeurRepository profilChauffeurRepository;
+    private final VehiculeRepository vehiculeRepository;
 
     /**
      * Login simplifie pour le MVP.
@@ -81,6 +87,35 @@ public class AuthService {
 
         Utilisateur saved = utilisateurRepository.save(user);
 
+        UUID profilId = null;
+        if (role == RoleUtilisateur.PATIENT) {
+            ProfilPatient profilPatient = ProfilPatient.builder()
+                    .utilisateur(saved)
+                    .numeroSecu(("TMP" + saved.getId().toString().replace("-", "")).substring(0, 21))
+                    .regime("Regime general")
+                    .build();
+            profilId = profilPatientRepository.save(profilPatient).getId();
+        } else if (role == RoleUtilisateur.CHAUFFEUR) {
+            ProfilChauffeur profilChauffeur = ProfilChauffeur.builder()
+                    .utilisateur(saved)
+                    .numeroAgrementCpam("TMP-CPAM-" + saved.getId().toString().substring(0, 8))
+                    .zoneGeo("Paris et Ile-de-France")
+                    .disponible(true)
+                    .build();
+            ProfilChauffeur savedProfil = profilChauffeurRepository.save(profilChauffeur);
+            profilId = savedProfil.getId();
+
+            Vehicule vehicule = Vehicule.builder()
+                    .chauffeur(savedProfil)
+                    .type(TypeVehicule.VSL)
+                    .immatriculation(("TMP" + saved.getId().toString().replace("-", "")).substring(0, 12).toUpperCase(Locale.ROOT))
+                    .marque("Renault")
+                    .modele("Kangoo")
+                    .actif(true)
+                    .build();
+            vehiculeRepository.save(vehicule);
+        }
+
         return LoginResponse.builder()
                 .id(saved.getId())
                 .email(saved.getEmail())
@@ -88,7 +123,7 @@ public class AuthService {
                 .prenom(saved.getPrenom())
                 .telephone(saved.getTelephone())
                 .role(saved.getRole().name())
-                .profilId(null)
+                .profilId(profilId)
                 .build();
     }
 

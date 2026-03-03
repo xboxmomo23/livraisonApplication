@@ -1,6 +1,7 @@
 package com.healdrive.controller;
 
 import com.healdrive.dto.DashboardStats;
+import com.healdrive.dto.CreateTrajetRequest;
 import com.healdrive.dto.StatutUpdateRequest;
 import com.healdrive.dto.TrajetResponse;
 import com.healdrive.service.TrajetService;
@@ -13,7 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/trajets")
-@CrossOrigin("*")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class TrajetController {
 
@@ -26,6 +27,16 @@ public class TrajetController {
     @GetMapping("/{id}")
     public ResponseEntity<TrajetResponse> getTrajet(@PathVariable UUID id) {
         return ResponseEntity.ok(trajetService.getTrajet(id));
+    }
+
+    /**
+     * POST /api/trajets
+     * Creer un trajet EN_ATTENTE.
+     * Body : { "depart", "destination", "date", "heure", "type_vehicule", "patientId" }
+     */
+    @PostMapping
+    public ResponseEntity<TrajetResponse> createTrajet(@RequestBody CreateTrajetRequest request) {
+        return ResponseEntity.status(201).body(trajetService.createTrajet(request));
     }
 
     /**

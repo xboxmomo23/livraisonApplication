@@ -1,17 +1,20 @@
 package com.healdrive.service;
 
 import com.healdrive.dto.DashboardStats;
+import com.healdrive.dto.CreateTrajetRequest;
 import com.healdrive.dto.StatutUpdateRequest;
 import com.healdrive.dto.TrajetResponse;
 import com.healdrive.model.*;
 import com.healdrive.model.enums.StatutTrajet;
 import com.healdrive.model.enums.TypeVehicule;
+import com.healdrive.model.enums.RoleUtilisateur;
 import com.healdrive.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +28,7 @@ public class TrajetService {
     private final ProfilPatientRepository profilPatientRepository;
     private final ProfilChauffeurRepository profilChauffeurRepository;
     private final VehiculeRepository vehiculeRepository;
+    private final PrescriptionRepository prescriptionRepository;
     private final HistoriqueStatutRepository historiqueStatutRepository;
     private final UtilisateurRepository utilisateurRepository;
 
@@ -109,6 +113,57 @@ public class TrajetService {
     // ===== ECRITURE =====
 
     /**
+     * Creer un trajet EN_ATTENTE pour un patient.
+     */
+    @Transactional
+    public TrajetResponse createTrajet(CreateTrajetRequest request) {
+        ProfilPatient patient = profilPatientRepository.findById(request.getPatientId())
+                .or(() -> profilPatientRepository.findByUtilisateurId(request.getPatientId()))
+                .orElseGet(() -> {
+                    Utilisateur user = utilisateurRepository.findById(request.getPatientId())
+                            .orElseThrow(() -> new RuntimeException("Patient introuvable : " + request.getPatientId()));
+                    if (user.getRole() != RoleUtilisateur.PATIENT) {
+                        throw new RuntimeException("L'utilisateur n'est pas un patient : " + request.getPatientId());
+                    }
+                    return profilPatientRepository.save(ProfilPatient.builder()
+                            .utilisateur(user)
+                            .numeroSecu(("TMP" + user.getId().toString().replace("-", "")).substring(0, 21))
+                            .regime("Regime general")
+                            .build());
+                });
+
+        Prescription prescription = prescriptionRepository.findValidPrescriptions(patient.getId(), LocalDate.now())
+                .stream()
+                .findFirst()
+                .orElseGet(() -> prescriptionRepository.save(
+                        Prescription.builder()
+                                .patient(patient)
+                                .medecinPrescripteur("Dr. Temporaire")
+                                .etablissement("Etablissement non renseigne")
+                                .typeTransportRequis(TypeVehicule.valueOf(request.getTypeVehicule()))
+                                .motif("Transport medical")
+                                .dateEmission(LocalDate.now())
+                                .dateValidite(LocalDate.now().plusMonths(3))
+                                .validee(true)
+                                .build()
+                ));
+
+        Trajet trajet = Trajet.builder()
+                .patient(patient)
+                .prescription(prescription)
+                .departAdresse(request.getDepart())
+                .destinationAdresse(request.getDestination())
+                .dateTrajet(LocalDate.parse(request.getDate()))
+                .heureTrajet(LocalTime.parse(request.getHeure()))
+                .typeVehicule(TypeVehicule.valueOf(request.getTypeVehicule()))
+                .statut(StatutTrajet.EN_ATTENTE)
+                .build();
+
+        trajet = trajetRepository.save(trajet);
+        return toResponse(trajet);
+    }
+
+    /**
      * Changer le statut d'un trajet.
      * Gere les transitions : EN_ATTENTE -> ACCEPTE -> EN_COURS -> TERMINE
      */
@@ -132,6 +187,7 @@ public class TrajetService {
                     throw new RuntimeException("chauffeurId requis pour accepter une course.");
                 }
                 ProfilChauffeur chauffeur = profilChauffeurRepository.findById(request.getChauffeurId())
+                        .or(() -> profilChauffeurRepository.findByUtilisateurId(request.getChauffeurId()))
                         .orElseThrow(() -> new RuntimeException("Chauffeur introuvable : " + request.getChauffeurId()));
                 trajet.setChauffeur(chauffeur);
                 trajet.setDateAcceptation(OffsetDateTime.now());
