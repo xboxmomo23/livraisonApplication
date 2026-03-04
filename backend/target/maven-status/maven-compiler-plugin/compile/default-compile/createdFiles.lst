@@ -16,6 +16,7 @@ com/healdrive/repository/UtilisateurRepository.class
 com/healdrive/dto/MessageRequest.class
 com/healdrive/model/Vehicule$VehiculeBuilder.class
 com/healdrive/repository/VehiculeRepository.class
+com/healdrive/dto/NotificationResponse.class
 com/healdrive/model/enums/RoleUtilisateur.class
 com/healdrive/model/HistoriqueStatut$HistoriqueStatutBuilder.class
 com/healdrive/repository/PrescriptionRepository.class
@@ -26,7 +27,9 @@ com/healdrive/repository/MessageRepository.class
 com/healdrive/dto/LoginRequest.class
 com/healdrive/service/MessageService.class
 com/healdrive/model/HistoriqueStatut.class
+com/healdrive/controller/NotificationController.class
 com/healdrive/HealDriveApplication.class
+com/healdrive/dto/NotificationResponse$NotificationResponseBuilder.class
 com/healdrive/model/enums/StatutTrajet.class
 com/healdrive/controller/TrajetController.class
 com/healdrive/service/TrajetService$1.class
@@ -35,6 +38,7 @@ com/healdrive/model/ProfilChauffeur$ProfilChauffeurBuilder.class
 com/healdrive/model/ProfilChauffeur.class
 com/healdrive/service/AuthService.class
 com/healdrive/dto/StatutUpdateRequest.class
+com/healdrive/service/NotificationService.class
 com/healdrive/model/Trajet.class
 com/healdrive/model/Vehicule.class
 com/healdrive/service/TrajetService.class

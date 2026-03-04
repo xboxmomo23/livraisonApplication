@@ -225,6 +225,8 @@ const AppState = {
     trajets: [...MOCK_TRAJETS],
     messages: JSON.parse(JSON.stringify(MOCK_MESSAGES)),
     notifications: [...MOCK_NOTIFICATIONS],
+    chatRefreshInterval: null,
+    notificationsRefreshInterval: null,
 };
 
 
@@ -456,8 +458,12 @@ function mapMessageFromApi(message) {
 function mapNotificationFromApi(notification) {
     return {
         id: notification.id ? String(notification.id) : ('notif-' + Date.now()),
-        message: notification.message || notification.titre || 'Notification',
+        type: notification.type || 'SYSTEME',
+        titre: notification.titre || 'Notification',
+        contenu: notification.contenu || notification.message || '',
+        message: notification.contenu || notification.message || notification.titre || 'Notification',
         time: notification.dateCreation ? formatTime(notification.dateCreation) : 'À l’instant',
+        trajet_id: notification.trajetId ? String(notification.trajetId) : null,
         read: notification.lu ?? false,
     };
 }
@@ -483,13 +489,12 @@ async function chargerMessagesTrajet(trajetId) {
 
 async function envoyerMessage(trajetId, expediteurId, contenu) {
     try {
-        const url = `${API_URL}/messages`;
+        const url = `${API_URL}/messages/trajet/${trajetId}`;
         console.log('[API] POST', url);
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                trajetId,
                 expediteurId,
                 contenu,
             }),
@@ -543,10 +548,31 @@ async function marquerNotificationLue(id) {
 
         const notif = AppState.notifications.find(n => n.id === id);
         if (notif) notif.read = true;
+        rafraichirBadgeNotifications();
         return true;
     } catch (error) {
         toast(error.message || 'Erreur serveur lors de la mise à jour des notifications.', 'error');
         throw error;
+    }
+}
+
+async function rafraichirBadgeNotifications() {
+    if (!AppState.currentUser) return;
+    try {
+        const userId = AppState.currentUser.id;
+        const url = `${API_URL}/notifications/utilisateur/${userId}/unread/count`;
+        console.log('[API] GET', url);
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Impossible de charger le compteur de notifications.');
+        }
+        const unreadCount = await response.json();
+        const badge = document.getElementById('notif-badge');
+        if (!badge) return;
+        badge.textContent = String(unreadCount);
+        badge.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
+    } catch (error) {
+        console.error('[API] ERROR notifications badge', error);
     }
 }
 
@@ -607,6 +633,7 @@ const routes = {
     '/dashboard':           renderPatientDashboard,
     '/new-request':         renderNewRequest,
     '/chauffeur-dashboard': renderChauffeurDashboard,
+    '/notifications':       renderNotifications,
     '/course':              renderCourseEnCours,
     '/chat':                renderChat,
 };
@@ -616,6 +643,15 @@ function navigate(hash) {
 }
 
 function handleRoute() {
+    if (AppState.chatRefreshInterval) {
+        clearInterval(AppState.chatRefreshInterval);
+        AppState.chatRefreshInterval = null;
+    }
+    if (AppState.notificationsRefreshInterval) {
+        clearInterval(AppState.notificationsRefreshInterval);
+        AppState.notificationsRefreshInterval = null;
+    }
+
     const raw = window.location.hash.slice(1) || '/';
     const [path, query] = raw.split('?');
     const params = new URLSearchParams(query || '');
@@ -686,7 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
         navigate('/login');
     });
 
-    document.getElementById('btn-notif').addEventListener('click', gererClicNotifications);
+    document.getElementById('btn-notif').addEventListener('click', () => navigate('/notifications'));
 
     handleRoute();
 });
@@ -897,6 +933,8 @@ function renderPatientDashboard(container, params, skipRemoteLoad = false) {
             }
         </div>
     </div>`;
+
+    rafraichirBadgeNotifications();
 }
 
 function statCard(label, value, icon, accentClass, delayClass) {
@@ -922,7 +960,7 @@ function patientTrajetRow(t, index) {
     const veh = VEHICULE_LABELS[t.type_vehicule] || { label: t.type_vehicule, icon: 'car', color: 'text-gray-500' };
     const stat = STATUT_LABELS[t.statut];
     const chauffeur = t.chauffeur_id ? getChauffeur(t.chauffeur_id) : null;
-    const hasChat = t.statut === 'EN_COURS' || t.statut === 'ACCEPTE';
+    const hasChat = t.statut !== 'EN_ATTENTE';
 
     return `
     <div class="trajet-row anim-fade-up anim-delay-${Math.min(index + 1, 4)}">
@@ -1065,6 +1103,8 @@ function renderChauffeurDashboard(container, params, skipRemoteLoad = false) {
             </div>
         </div>` : ''}
     </div>`;
+
+    rafraichirBadgeNotifications();
 }
 
 function chauffeurActiveCourseCard(t) {
@@ -1390,8 +1430,9 @@ function renderChat(container, params) {
     const messagesContainer = container.querySelector('#chat-messages');
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-    chargerMessagesTrajet(trajetId)
-        .then((remoteMessages) => {
+    async function refreshMessages() {
+        try {
+            const remoteMessages = await chargerMessagesTrajet(trajetId);
             messagesContainer.innerHTML = remoteMessages.length === 0
                 ? `<div class="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm">
                        <i data-lucide="message-circle" class="w-10 h-10 mb-3 opacity-30"></i>
@@ -1400,10 +1441,13 @@ function renderChat(container, params) {
                 : remoteMessages.map(m => chatBubble(m, user.id)).join('');
             refreshIcons();
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        })
-        .catch(() => {
+        } catch (error) {
             // toast already handled in chargerMessagesTrajet
-        });
+        }
+    }
+
+    refreshMessages();
+    AppState.chatRefreshInterval = setInterval(refreshMessages, 5000);
 
     // Send message
     const input = container.querySelector('#chat-input');
@@ -1423,6 +1467,7 @@ function renderChat(container, params) {
             refreshIcons();
             input.value = '';
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            refreshMessages();
         } catch (error) {
             // toast already handled in envoyerMessage
         }
@@ -1438,7 +1483,20 @@ function renderChat(container, params) {
 }
 
 function chatBubble(msg, currentUserId) {
-    const isMine = msg.expediteur_id === currentUserId;
+    const rawSenderId = msg.expediteur_id ?? msg.expediteurId ?? msg.expediteur?.id ?? '';
+    const rawCurrentUserId = AppState.currentUser?.id ?? currentUserId ?? '';
+    console.log('Comparaison:', rawSenderId, rawCurrentUserId);
+
+    const normalizeId = (value) =>
+        String(value || '')
+            .toLowerCase()
+            .replace(/-/g, '')
+            .trim();
+
+    const fromId = normalizeId(rawSenderId);
+    const me = normalizeId(rawCurrentUserId);
+    const isMine = fromId !== '' && fromId === me;
+
     return `
     <div class="chat-bubble ${isMine ? 'chat-bubble-sent' : 'chat-bubble-received'}">
         ${msg.contenu}
@@ -1446,51 +1504,58 @@ function chatBubble(msg, currentUserId) {
     </div>`;
 }
 
-function simulateReply(trajetId, currentUserId, messagesContainer) {
-    // Show typing indicator
-    const typingEl = document.createElement('div');
-    typingEl.className = 'chat-bubble chat-bubble-received';
-    typingEl.id = 'typing-indicator';
-    typingEl.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
-    messagesContainer.appendChild(typingEl);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+function renderNotifications(container) {
+    if (!AppState.currentUser) {
+        navigate('/login');
+        return;
+    }
 
-    const autoReplies = [
-        'Bien reçu, merci pour l\'information !',
-        'D\'accord, je note. À tout à l\'heure !',
-        'Parfait, je serai prêt(e).',
-        'Merci, n\'hésitez pas si vous avez besoin de quoi que ce soit.',
-        'Compris ! Je vous tiens au courant de mon avancement.',
-        'Très bien. Bonne fin de journée !',
-    ];
+    container.innerHTML = `
+    <div class="pt-24 pb-16 px-4 sm:px-6 max-w-3xl mx-auto">
+        <div class="flex items-center justify-between mb-6 anim-fade-up">
+            <div>
+                <p class="text-sm text-brand-600 font-semibold tracking-wide uppercase mb-1">Notifications</p>
+                <h2 class="section-title">Centre de notifications</h2>
+            </div>
+            <button class="btn-ghost text-xs" onclick="navigate('${getDashboardRoute()}')">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Retour
+            </button>
+        </div>
+        <div id="notifications-list" class="card-flat overflow-hidden">
+            <div class="p-6 text-sm text-gray-400">Chargement...</div>
+        </div>
+    </div>`;
 
-    setTimeout(() => {
-        // Remove typing indicator
-        const typing = document.getElementById('typing-indicator');
-        if (typing) typing.remove();
+    const listEl = container.querySelector('#notifications-list');
 
-        // Determine who replies
-        const t = AppState.trajets.find(tr => tr.id === trajetId);
-        let replierId;
-        if (AppState.currentUser.role === 'PATIENT') {
-            replierId = t.chauffeur_id || 'chf-001';
-        } else {
-            replierId = t.patient_id;
+    async function loadNotifications() {
+        try {
+            const notifications = await chargerNotificationsUtilisateur(AppState.currentUser.id);
+            console.log(notifications);
+            if (notifications.length === 0) {
+                listEl.innerHTML = `<div class="p-6 text-sm text-gray-400">Aucune notification.</div>`;
+            } else {
+                listEl.innerHTML = notifications.map(n => `
+                    <button class="w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${n.read ? '' : 'bg-brand-50/40'}" onclick="marquerNotificationLue('${n.id}').then(() => navigate('/notifications'))">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">${n.titre || 'Notification'}</p>
+                                <p class="text-sm text-gray-600 mt-1">${n.contenu || n.message}</p>
+                            </div>
+                            <div class="shrink-0 text-xs text-gray-400">${n.time}</div>
+                        </div>
+                    </button>
+                `).join('');
+            }
+            rafraichirBadgeNotifications();
+            refreshIcons();
+        } catch (error) {
+            listEl.innerHTML = `<div class="p-6 text-sm text-coral-500">Impossible de charger les notifications.</div>`;
         }
+    }
 
-        const reply = {
-            id: 'reply-' + Date.now(),
-            trajet_id: trajetId,
-            expediteur_id: replierId,
-            contenu: autoReplies[Math.floor(Math.random() * autoReplies.length)],
-            timestamp: nowISO(),
-        };
-
-        AppState.messages[trajetId].push(reply);
-        messagesContainer.insertAdjacentHTML('beforeend', chatBubble(reply, currentUserId));
-        refreshIcons();
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }, 2000 + Math.random() * 1500);
+    loadNotifications();
+    AppState.notificationsRefreshInterval = setInterval(loadNotifications, 5000);
 }
 
 

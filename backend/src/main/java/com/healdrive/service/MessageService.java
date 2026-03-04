@@ -5,6 +5,7 @@ import com.healdrive.dto.MessageResponse;
 import com.healdrive.model.Message;
 import com.healdrive.model.Trajet;
 import com.healdrive.model.Utilisateur;
+import com.healdrive.model.enums.TypeNotification;
 import com.healdrive.repository.MessageRepository;
 import com.healdrive.repository.TrajetRepository;
 import com.healdrive.repository.UtilisateurRepository;
@@ -23,6 +24,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final TrajetRepository trajetRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final NotificationService notificationService;
 
     /**
      * Recuperer tous les messages d'un trajet.
@@ -53,6 +55,27 @@ public class MessageService {
                 .build();
 
         message = messageRepository.save(message);
+
+        Utilisateur patientUser = trajet.getPatient() != null ? trajet.getPatient().getUtilisateur() : null;
+        Utilisateur chauffeurUser = trajet.getChauffeur() != null ? trajet.getChauffeur().getUtilisateur() : null;
+        UUID destinataireId = null;
+
+        if (patientUser != null && !patientUser.getId().equals(expediteur.getId())) {
+            destinataireId = patientUser.getId();
+        } else if (chauffeurUser != null && !chauffeurUser.getId().equals(expediteur.getId())) {
+            destinataireId = chauffeurUser.getId();
+        }
+
+        if (destinataireId != null) {
+            notificationService.creerNotification(
+                    destinataireId,
+                    TypeNotification.NOUVEAU_MESSAGE,
+                    "Nouveau message",
+                    "Vous avez recu un nouveau message sur votre trajet.",
+                    trajet
+            );
+        }
+
         return toResponse(message);
     }
 

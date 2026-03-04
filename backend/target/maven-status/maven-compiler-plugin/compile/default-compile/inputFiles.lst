@@ -3,6 +3,7 @@
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/Prescription.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/Utilisateur.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/VehiculeRepository.java
+/home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/NotificationResponse.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/Vehicule.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/Notification.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/Trajet.java
@@ -10,6 +11,7 @@
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/service/AuthService.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/HistoriqueStatutRepository.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/UtilisateurRepository.java
+/home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/service/NotificationService.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/enums/TypeVehicule.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/Message.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/service/TrajetService.java
@@ -20,6 +22,7 @@
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/MessageRepository.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/controller/TrajetController.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/HealDriveApplication.java
+/home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/controller/NotificationController.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/enums/TypeNotification.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/LoginResponse.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/TrajetResponse.java

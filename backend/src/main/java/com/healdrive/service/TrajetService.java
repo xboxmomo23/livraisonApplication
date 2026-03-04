@@ -19,6 +19,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.healdrive.model.enums.TypeNotification;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,7 @@ public class TrajetService {
     private final PrescriptionRepository prescriptionRepository;
     private final HistoriqueStatutRepository historiqueStatutRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final NotificationService notificationService;
 
     // ===== LECTURE =====
 
@@ -209,6 +211,38 @@ public class TrajetService {
         }
 
         trajetRepository.save(trajet);
+
+        UUID patientUserId = trajet.getPatient() != null && trajet.getPatient().getUtilisateur() != null
+                ? trajet.getPatient().getUtilisateur().getId()
+                : null;
+
+        if (patientUserId != null) {
+            switch (nouveauStatut) {
+                case ACCEPTE -> notificationService.creerNotification(
+                        patientUserId,
+                        TypeNotification.COURSE_ACCEPTEE,
+                        "Course acceptee",
+                        "Votre course a ete acceptee par un chauffeur.",
+                        trajet
+                );
+                case EN_COURS -> notificationService.creerNotification(
+                        patientUserId,
+                        TypeNotification.COURSE_DEMARREE,
+                        "Course demarree",
+                        "Votre course vient de demarrer.",
+                        trajet
+                );
+                case TERMINE -> notificationService.creerNotification(
+                        patientUserId,
+                        TypeNotification.COURSE_TERMINEE,
+                        "Course terminee",
+                        "Votre course est terminee.",
+                        trajet
+                );
+                default -> {
+                }
+            }
+        }
 
         // Historique
         UUID modifiePar = request.getChauffeurId();
