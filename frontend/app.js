@@ -630,6 +630,7 @@ async function creerDemande(payload) {
 const routes = {
     '/':                    renderLogin,
     '/login':               renderLogin,
+    '/register':            renderRegister,
     '/dashboard':           renderPatientDashboard,
     '/new-request':         renderNewRequest,
     '/chauffeur-dashboard': renderChauffeurDashboard,
@@ -658,11 +659,11 @@ function handleRoute() {
     const renderer = routes[path];
 
     // Auth guards
-    if (!AppState.currentUser && path !== '/' && path !== '/login') {
+    if (!AppState.currentUser && path !== '/' && path !== '/login' && path !== '/register') {
         navigate('/login');
         return;
     }
-    if (AppState.currentUser && (path === '/' || path === '/login')) {
+    if (AppState.currentUser && (path === '/' || path === '/login' || path === '/register')) {
         navigate(getDashboardRoute());
         return;
     }
@@ -728,6 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
 // ————————————————————————————————————————————
 //  6. VIEW: LOGIN
 // ————————————————————————————————————————————
@@ -735,77 +737,79 @@ document.addEventListener('DOMContentLoaded', () => {
 function renderLogin(container) {
     container.innerHTML = `
     <div class="login-bg flex items-center justify-center px-4 py-12 min-h-screen">
-        <div class="card-elevated w-full max-w-md p-8 anim-fade-up" style="position:relative;z-index:1">
-            <div class="flex items-center justify-center gap-3 mb-2">
-                <div class="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg">
-                    <i data-lucide="heart-pulse" class="w-6 h-6 text-white"></i>
+        <div class="w-full max-w-md anim-fade-up" style="position:relative;z-index:1">
+
+            <!-- Logo -->
+            <div class="flex items-center justify-center gap-3 mb-8">
+                <div class="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center shadow-lg">
+                    <i data-lucide="heart-pulse" class="w-7 h-7 text-white"></i>
                 </div>
-                <h1 class="font-display text-3xl text-brand-900 tracking-tight">HealDrive</h1>
-            </div>
-            <p class="text-center text-sm text-gray-400 mb-8">Transport médical connecté</p>
-
-            <p class="input-label text-center mb-3">Je me connecte en tant que</p>
-            <div class="grid grid-cols-2 gap-3 mb-6" id="role-selector">
-                <label class="role-card active" data-role="PATIENT">
-                    <input type="radio" name="role" value="PATIENT" checked>
-                    <i data-lucide="user-round" class="w-7 h-7 mx-auto mb-2 text-brand-600"></i>
-                    <span class="block text-sm font-semibold text-gray-700">Patient</span>
-                </label>
-                <label class="role-card" data-role="CHAUFFEUR">
-                    <input type="radio" name="role" value="CHAUFFEUR">
-                    <i data-lucide="truck" class="w-7 h-7 mx-auto mb-2 text-brand-600"></i>
-                    <span class="block text-sm font-semibold text-gray-700">Chauffeur</span>
-                </label>
+                <div>
+                    <h1 class="font-display text-3xl text-brand-900 tracking-tight leading-none">HealDrive</h1>
+                    <p class="text-xs text-gray-400 tracking-wide">Transport médical connecté</p>
+                </div>
             </div>
 
-            <div class="mb-4">
-                <label class="input-label" for="login-email">Adresse email</label>
-                <input class="input-field" type="email" id="login-email" placeholder="exemple@email.com" value="marie.dupont@email.com">
-            </div>
-            <div class="mb-6">
-                <label class="input-label" for="login-password">Mot de passe</label>
-                <input class="input-field" type="password" id="login-password" placeholder="••••••••" value="demo1234">
+            <!-- Login Card -->
+            <div class="card-elevated p-8">
+                <h2 class="text-lg font-bold text-gray-800 mb-1">Bienvenue</h2>
+                <p class="text-sm text-gray-400 mb-6">Connectez-vous à votre espace sécurisé.</p>
+
+                <!-- Role selector -->
+                <p class="input-label mb-2">Je suis</p>
+                <div class="grid grid-cols-2 gap-3 mb-6" id="role-selector">
+                    <label class="role-card active" data-role="PATIENT">
+                        <input type="radio" name="role" value="PATIENT" checked>
+                        <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-2">
+                            <i data-lucide="user-round" class="w-5 h-5 text-brand-600"></i>
+                        </div>
+                        <span class="block text-sm font-semibold text-gray-700">Patient</span>
+                        <span class="block text-[11px] text-gray-400 mt-0.5">Réserver un transport</span>
+                    </label>
+                    <label class="role-card" data-role="CHAUFFEUR">
+                        <input type="radio" name="role" value="CHAUFFEUR">
+                        <div class="w-10 h-10 rounded-xl bg-mint-400/10 flex items-center justify-center mb-2">
+                            <i data-lucide="truck" class="w-5 h-5 text-green-700"></i>
+                        </div>
+                        <span class="block text-sm font-semibold text-gray-700">Chauffeur</span>
+                        <span class="block text-[11px] text-gray-400 mt-0.5">Gérer mes courses</span>
+                    </label>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-4">
+                    <label class="input-label" for="login-email">Adresse email</label>
+                    <input class="input-field" type="email" id="login-email" placeholder="exemple@email.com" value="marie.dupont@email.com">
+                </div>
+
+                <!-- Password -->
+                <div class="mb-2">
+                    <label class="input-label" for="login-password">Mot de passe</label>
+                    <input class="input-field" type="password" id="login-password" placeholder="••••••••" value="demo1234">
+                </div>
+
+                <!-- Forgot password -->
+                <div class="text-right mb-6">
+                    <a href="#" class="text-xs text-brand-600 hover:text-brand-800 font-medium transition-colors" onclick="event.preventDefault(); toast('Fonctionnalité bientôt disponible.', 'info')">
+                        Mot de passe oublié ?
+                    </a>
+                </div>
+
+                <!-- Login Button -->
+                <button id="btn-login" class="btn-primary w-full text-base justify-center">
+                    <i data-lucide="log-in" class="w-5 h-5"></i> Se connecter
+                </button>
             </div>
 
-            <button id="btn-login" class="btn-primary w-full text-base">
-                <i data-lucide="log-in" class="w-5 h-5"></i> Se connecter
-            </button>
-
-            <div class="my-5 border-t border-gray-100"></div>
-
-            <p class="input-label text-center mb-3">Pas encore de compte ?</p>
-            <div class="mb-3">
-                <label class="input-label" for="register-nom">Nom</label>
-                <input class="input-field" type="text" id="register-nom" placeholder="Ex: Dupont">
+            <!-- Register CTA -->
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">
+                    Pas encore de compte ?
+                    <a href="#/register" class="text-brand-600 hover:text-brand-800 font-semibold transition-colors ml-1">
+                        Créer un compte
+                    </a>
+                </p>
             </div>
-            <div class="mb-3">
-                <label class="input-label" for="register-prenom">Prénom</label>
-                <input class="input-field" type="text" id="register-prenom" placeholder="Ex: Marie">
-            </div>
-            <div class="mb-3">
-                <label class="input-label" for="register-email">Email</label>
-                <input class="input-field" type="email" id="register-email" placeholder="exemple@email.com">
-            </div>
-            <div class="mb-3">
-                <label class="input-label" for="register-role">Rôle</label>
-                <select class="input-field" id="register-role">
-                    <option value="PATIENT" selected>PATIENT</option>
-                    <option value="CHAUFFEUR">CHAUFFEUR</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label class="input-label" for="register-telephone">Téléphone</label>
-                <input class="input-field" type="tel" id="register-telephone" placeholder="Ex: 0611223344">
-            </div>
-            <div class="mb-4">
-                <label class="input-label" for="register-password">Mot de passe</label>
-                <input class="input-field" type="password" id="register-password" placeholder="••••••••">
-            </div>
-            <button id="btn-register" class="btn-ghost w-full text-base">
-                <i data-lucide="user-plus" class="w-5 h-5"></i> S'inscrire
-            </button>
-
-            <p class="text-xs text-gray-400 text-center mt-5">MVP Demo — Données simulées</p>
         </div>
     </div>`;
 
@@ -819,7 +823,6 @@ function renderLogin(container) {
             roleCards.forEach(c => c.classList.remove('active'));
             card.classList.add('active');
             card.querySelector('input').checked = true;
-            // Pre-fill email based on role
             const role = card.dataset.role;
             emailInput.value = role === 'CHAUFFEUR' ? 'philippe.lefebvre@healdrive.fr' : 'marie.dupont@email.com';
         });
@@ -841,9 +844,125 @@ function renderLogin(container) {
             toast(error.message || 'Échec de la connexion.', 'error');
         }
     });
+}
 
+
+// ————————————————————————————————————————————
+//  6b. VIEW: REGISTER (NEW)
+// ————————————————————————————————————————————
+
+function renderRegister(container) {
+    container.innerHTML = `
+    <div class="login-bg flex items-center justify-center px-4 py-12 min-h-screen">
+        <div class="w-full max-w-lg anim-fade-up" style="position:relative;z-index:1">
+
+            <!-- Logo -->
+            <div class="flex items-center justify-center gap-3 mb-8">
+                <div class="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center shadow-lg">
+                    <i data-lucide="heart-pulse" class="w-7 h-7 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-display text-3xl text-brand-900 tracking-tight leading-none">HealDrive</h1>
+                    <p class="text-xs text-gray-400 tracking-wide">Transport médical connecté</p>
+                </div>
+            </div>
+
+            <!-- Register Card -->
+            <div class="card-elevated p-8">
+                <h2 class="text-lg font-bold text-gray-800 mb-1">Créer un compte</h2>
+                <p class="text-sm text-gray-400 mb-6">Rejoignez HealDrive en quelques instants.</p>
+
+                <!-- Role selector -->
+                <p class="input-label mb-2">Je m'inscris en tant que</p>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <label class="role-card active" data-role="PATIENT" id="reg-role-patient">
+                        <input type="radio" name="register-role-radio" value="PATIENT" checked>
+                        <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-2">
+                            <i data-lucide="user-round" class="w-5 h-5 text-brand-600"></i>
+                        </div>
+                        <span class="block text-sm font-semibold text-gray-700">Patient</span>
+                        <span class="block text-[11px] text-gray-400 mt-0.5">J'ai besoin de transport</span>
+                    </label>
+                    <label class="role-card" data-role="CHAUFFEUR" id="reg-role-chauffeur">
+                        <input type="radio" name="register-role-radio" value="CHAUFFEUR">
+                        <div class="w-10 h-10 rounded-xl bg-mint-400/10 flex items-center justify-center mb-2">
+                            <i data-lucide="truck" class="w-5 h-5 text-green-700"></i>
+                        </div>
+                        <span class="block text-sm font-semibold text-gray-700">Chauffeur</span>
+                        <span class="block text-[11px] text-gray-400 mt-0.5">Je propose mes services</span>
+                    </label>
+                </div>
+
+                <!-- Hidden select for API compat -->
+                <select class="hidden" id="register-role">
+                    <option value="PATIENT" selected>PATIENT</option>
+                    <option value="CHAUFFEUR">CHAUFFEUR</option>
+                </select>
+
+                <!-- Name fields -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="input-label" for="register-nom">Nom</label>
+                        <input class="input-field" type="text" id="register-nom" placeholder="Dupont">
+                    </div>
+                    <div>
+                        <label class="input-label" for="register-prenom">Prénom</label>
+                        <input class="input-field" type="text" id="register-prenom" placeholder="Marie">
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-4">
+                    <label class="input-label" for="register-email">Adresse email</label>
+                    <input class="input-field" type="email" id="register-email" placeholder="exemple@email.com">
+                </div>
+
+                <!-- Phone -->
+                <div class="mb-4">
+                    <label class="input-label" for="register-telephone">Téléphone</label>
+                    <input class="input-field" type="tel" id="register-telephone" placeholder="06 12 34 56 78">
+                </div>
+
+                <!-- Password -->
+                <div class="mb-6">
+                    <label class="input-label" for="register-password">Mot de passe</label>
+                    <input class="input-field" type="password" id="register-password" placeholder="Minimum 8 caractères">
+                </div>
+
+                <!-- Register Button -->
+                <button id="btn-register" class="btn-primary w-full text-base justify-center">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i> Créer mon compte
+                </button>
+            </div>
+
+            <!-- Back to login -->
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">
+                    Déjà inscrit ?
+                    <a href="#/login" class="text-brand-600 hover:text-brand-800 font-semibold transition-colors ml-1">
+                        Se connecter
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>`;
+
+    // Role card toggle + sync hidden select
+    const regRoleCards = container.querySelectorAll('.role-card');
+    const hiddenSelect = container.querySelector('#register-role');
+
+    regRoleCards.forEach(card => {
+        card.addEventListener('click', () => {
+            regRoleCards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            card.querySelector('input').checked = true;
+            hiddenSelect.value = card.dataset.role;
+        });
+    });
+
+    // Register action — uses same IDs as before
     container.querySelector('#btn-register').addEventListener('click', async () => {
-        const role = container.querySelector('#register-role').value;
+        const role = hiddenSelect.value;
         const nom = container.querySelector('#register-nom').value.trim();
         const prenom = container.querySelector('#register-prenom').value.trim();
         const email = container.querySelector('#register-email').value.trim();
@@ -851,7 +970,7 @@ function renderLogin(container) {
         const motDePasse = container.querySelector('#register-password').value;
 
         if (!nom || !prenom || !email || !motDePasse || !role || !telephone) {
-            toast('Veuillez remplir tous les champs d’inscription.', 'error');
+            toast('Veuillez remplir tous les champs.', 'error');
             return;
         }
 
@@ -864,15 +983,12 @@ function renderLogin(container) {
                 role,
                 telephone,
             });
-            emailInput.value = email;
-            loginPasswordInput.value = motDePasse;
             navigate('/login');
         } catch (error) {
-            // toast deja gere dans sInscrire
+            // toast already handled in sInscrire
         }
     });
 }
-
 
 // ————————————————————————————————————————————
 //  7. VIEW: PATIENT DASHBOARD
@@ -922,14 +1038,16 @@ function renderPatientDashboard(container, params, skipRemoteLoad = false) {
             ${statCard('Terminés', counts.TERMINE, 'flag', 'stat-accent-coral', 'anim-delay-4')}
         </div>
 
-        <div class="card-flat overflow-hidden anim-fade-up" style="animation-delay:.2s">
-            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="font-semibold text-gray-800 text-[15px]">Mes trajets</h3>
+        <div class="anim-fade-up" style="animation-delay:.2s">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-800 text-[15px] flex items-center gap-2">
+                    <i data-lucide="route" class="w-4 h-4 text-brand-500"></i> Mes trajets
+                </h3>
                 <span class="text-xs text-gray-400">${trajets.length} trajet(s)</span>
             </div>
             ${trajets.length === 0
-                ? emptyState('route-off', 'Aucun trajet pour le moment.')
-                : trajets.map((t, i) => patientTrajetRow(t, i)).join('')
+                ? `<div class="card-flat">${emptyState('route-off', 'Aucun trajet pour le moment. Faites votre première demande !')}</div>`
+                : `<div class="grid gap-4">${trajets.map((t, i) => patientTrajetRow(t, i)).join('')}</div>`
             }
         </div>
     </div>`;
@@ -953,42 +1071,6 @@ function emptyState(icon, text) {
     <div class="empty-state">
         <div class="empty-state-icon"><i data-lucide="${icon}" class="w-7 h-7 text-brand-300"></i></div>
         <p class="text-gray-400 text-sm">${text}</p>
-    </div>`;
-}
-
-function patientTrajetRow(t, index) {
-    const veh = VEHICULE_LABELS[t.type_vehicule] || { label: t.type_vehicule, icon: 'car', color: 'text-gray-500' };
-    const stat = STATUT_LABELS[t.statut];
-    const chauffeur = t.chauffeur_id ? getChauffeur(t.chauffeur_id) : null;
-    const hasChat = t.statut !== 'EN_ATTENTE';
-
-    return `
-    <div class="trajet-row anim-fade-up anim-delay-${Math.min(index + 1, 4)}">
-        <div class="w-10 h-10 rounded-xl ${veh.bg || 'bg-brand-50'} flex items-center justify-center shrink-0">
-            <i data-lucide="${veh.icon}" class="w-5 h-5 ${veh.color}"></i>
-        </div>
-        <div class="min-w-0">
-            <p class="text-sm font-semibold text-gray-800 truncate">${t.depart}</p>
-            <p class="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                <i data-lucide="arrow-right" class="w-3 h-3"></i>
-                <span class="truncate">${t.destination}</span>
-            </p>
-            <p class="text-xs text-gray-400 mt-1">
-                ${formatDate(t.date)} à ${t.heure} · <span class="${veh.color} font-medium">${veh.label}</span>
-                ${chauffeur ? ` · ${chauffeur.nom}` : ''}
-                ${t.tarif_estime ? ` · <span class="font-medium text-gray-600">${t.tarif_estime.toFixed(2)} €</span>` : ''}
-            </p>
-        </div>
-        <div><span class="badge ${stat.badge}">${stat.label}</span></div>
-        <div class="flex gap-2">
-            ${hasChat ? `<button class="btn-ghost text-xs py-1.5 px-3" onclick="navigate('/chat?trajet=${t.id}')"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Chat</button>` : ''}
-            ${t.statut === 'EN_COURS'
-                ? `<button class="btn-ghost text-xs py-1.5 px-3" onclick="toast('Suivi GPS — bientôt disponible.', 'info')"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Suivre</button>`
-                : t.statut === 'EN_ATTENTE'
-                    ? `<button class="btn-ghost text-xs py-1.5 px-3 text-coral-500 border-coral-400/20 hover:bg-red-50" onclick="cancelTrajet('${t.id}')"><i data-lucide="x" class="w-3.5 h-3.5"></i> Annuler</button>`
-                    : ''
-            }
-        </div>
     </div>`;
 }
 
