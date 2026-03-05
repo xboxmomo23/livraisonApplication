@@ -443,3 +443,54 @@ select.input-field {
     .course-card { padding: 16px; }
     .trajet-card { padding: 16px; }
 }
+/* ———— Upload Zone Mini (Chauffeur docs) ———— */
+.upload-zone-mini {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1.5px dashed rgba(0,0,0,.1);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    background: var(--sand-50);
+}
+.upload-zone-mini:hover {
+    border-color: var(--brand-400);
+    background: var(--brand-50);
+}
+.upload-zone-mini.uploaded {
+    border-color: var(--mint-400);
+    border-style: solid;
+    background: rgba(16,185,129,.04);
+}
+.upload-zone-mini .file-status {
+    margin-left: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+/* ———— Admin badge color ———— */
+.badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+.badge-validated {
+    background: #d1fae5;
+    color: #065f46;
+}
+.badge-rejected {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+/* ———— Spin animation for loader ———— */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.animate-spin {
+    animation: spin 1s linear infinite;
+}

@@ -41,6 +41,10 @@ public class Utilisateur {
     @Column(nullable = false, length = 20)
     private RoleUtilisateur role;
 
+    @Column(name = "statut_compte", nullable = false, length = 20)
+    @Builder.Default
+    private String statutCompte = "ACTIF";
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean actif = true;

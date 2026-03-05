@@ -41,6 +41,11 @@ public class AuthService {
             throw new RuntimeException("Ce compte est desactive.");
         }
 
+        if (user.getRole() == RoleUtilisateur.CHAUFFEUR
+                && !"ACTIF".equalsIgnoreCase(user.getStatutCompte())) {
+            throw new RuntimeException("Votre compte est en attente de validation par un administrateur");
+        }
+
         // Recuperer l'ID du profil selon le role
         UUID profilId = null;
         if (user.getRole() == RoleUtilisateur.PATIENT) {
@@ -82,6 +87,7 @@ public class AuthService {
                 .prenom(request.getPrenom().trim())
                 .telephone(request.getTelephone())
                 .role(role)
+                .statutCompte(role == RoleUtilisateur.CHAUFFEUR ? "EN_ATTENTE" : "ACTIF")
                 .actif(true)
                 .build();
 

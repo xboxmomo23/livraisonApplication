@@ -11,6 +11,7 @@ com/healdrive/config/CorsConfig.class
 com/healdrive/model/Utilisateur$UtilisateurBuilder.class
 com/healdrive/model/ProfilPatient.class
 com/healdrive/model/Message.class
+com/healdrive/service/EmailService.class
 com/healdrive/model/Notification.class
 com/healdrive/repository/UtilisateurRepository.class
 com/healdrive/dto/MessageRequest.class
@@ -43,6 +44,7 @@ com/healdrive/model/Trajet.class
 com/healdrive/model/Vehicule.class
 com/healdrive/service/TrajetService.class
 com/healdrive/model/Prescription$PrescriptionBuilder.class
+com/healdrive/controller/AdminController.class
 com/healdrive/dto/RegisterRequest.class
 com/healdrive/model/Prescription.class
 com/healdrive/dto/MessageResponse$MessageResponseBuilder.class

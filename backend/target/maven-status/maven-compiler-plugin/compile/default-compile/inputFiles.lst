@@ -17,11 +17,13 @@
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/service/TrajetService.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/RegisterRequest.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/CreateTrajetRequest.java
+/home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/service/EmailService.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/controller/AuthController.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/enums/RoleUtilisateur.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/repository/MessageRepository.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/controller/TrajetController.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/HealDriveApplication.java
+/home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/controller/AdminController.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/controller/NotificationController.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/model/enums/TypeNotification.java
 /home/nadir/SanteeApplication/backend/src/main/java/com/healdrive/dto/LoginResponse.java

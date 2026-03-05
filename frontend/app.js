@@ -278,6 +278,7 @@ function getPrescription(id){ return MOCK_PRESCRIPTIONS.find(p => p.id === id); 
 
 function getDashboardRoute() {
     if (!AppState.currentUser) return '/login';
+    if (AppState.currentUser.role === 'ADMIN') return '/admin';
     return AppState.currentUser.role === 'CHAUFFEUR' ? '/chauffeur-dashboard' : '/dashboard';
 }
 
@@ -637,6 +638,7 @@ const routes = {
     '/notifications':       renderNotifications,
     '/course':              renderCourseEnCours,
     '/chat':                renderChat,
+    '/admin':               renderAdminDashboard,
 };
 
 function navigate(hash) {
@@ -677,7 +679,10 @@ function handleRoute() {
         homeLink.href = '#' + getDashboardRoute();
 
         const roleBadge = document.getElementById('nav-role-badge');
-        if (AppState.currentUser.role === 'CHAUFFEUR') {
+        if (AppState.currentUser.role === 'ADMIN') {
+            roleBadge.textContent = 'Admin';
+            roleBadge.className = 'text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 hidden sm:inline';
+        } else if (AppState.currentUser.role === 'CHAUFFEUR') {
             roleBadge.textContent = 'Chauffeur';
             roleBadge.className = 'text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-mint-400/15 text-green-700 hidden sm:inline';
         } else {
@@ -924,14 +929,74 @@ function renderRegister(container) {
                 </div>
 
                 <!-- Password -->
-                <div class="mb-6">
+                <div class="mb-4">
                     <label class="input-label" for="register-password">Mot de passe</label>
                     <input class="input-field" type="password" id="register-password" placeholder="Minimum 8 caractères">
                 </div>
 
+                <!-- ======= CHAUFFEUR EXPERT SECTION (hidden by default) ======= -->
+                <div id="chauffeur-expert-section" class="hidden">
+                    <div class="border-t border-gray-100 pt-5 mt-2 mb-4">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-brand-600"></i>
+                            <h3 class="text-sm font-bold text-gray-800">Dossier professionnel chauffeur</h3>
+                        </div>
+
+                        <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 mb-5 flex gap-2.5">
+                            <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+                            <p class="text-xs text-amber-800">Votre compte sera <strong>en attente de validation</strong> par notre équipe administrative. Vous recevrez une notification dès l'approbation.</p>
+                        </div>
+
+                        <!-- Experience -->
+                        <div class="mb-4">
+                            <label class="input-label" for="register-experience">Années d'expérience</label>
+                            <input class="input-field" type="number" id="register-experience" min="3" max="50" placeholder="Minimum 3 ans">
+                            <p class="text-[11px] text-gray-400 mt-1">3 ans minimum requis pour le transport médical.</p>
+                        </div>
+
+                        <!-- Documents upload -->
+                        <p class="input-label mb-3">Documents obligatoires</p>
+                        <div class="grid gap-3 mb-4">
+                            <div class="upload-zone-mini" id="zone-permis">
+                                <i data-lucide="id-card" class="w-4 h-4 text-brand-500"></i>
+                                <span class="text-xs text-gray-600 font-medium">Permis de conduire</span>
+                                <input type="file" id="file-permis" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
+                                <span class="file-status text-[10px] text-gray-400">Aucun fichier</span>
+                            </div>
+                            <div class="upload-zone-mini" id="zone-identite">
+                                <i data-lucide="credit-card" class="w-4 h-4 text-brand-500"></i>
+                                <span class="text-xs text-gray-600 font-medium">Carte d'identité</span>
+                                <input type="file" id="file-identite" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
+                                <span class="file-status text-[10px] text-gray-400">Aucun fichier</span>
+                            </div>
+                            <div class="upload-zone-mini" id="zone-assurance">
+                                <i data-lucide="file-shield" class="w-4 h-4 text-brand-500"></i>
+                                <span class="text-xs text-gray-600 font-medium">Attestation d'assurance</span>
+                                <input type="file" id="file-assurance" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
+                                <span class="file-status text-[10px] text-gray-400">Aucun fichier</span>
+                            </div>
+                            <div class="upload-zone-mini" id="zone-carte-grise">
+                                <i data-lucide="car" class="w-4 h-4 text-brand-500"></i>
+                                <span class="text-xs text-gray-600 font-medium">Carte grise du véhicule</span>
+                                <input type="file" id="file-carte-grise" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
+                                <span class="file-status text-[10px] text-gray-400">Aucun fichier</span>
+                            </div>
+                        </div>
+
+                        <!-- First aid kit checkbox -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl bg-mint-400/5 border border-mint-400/20 cursor-pointer hover:bg-mint-400/10 transition-colors">
+                            <input type="checkbox" id="check-secours" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                            <div>
+                                <span class="text-sm font-medium text-gray-800">Je certifie posséder une trousse de secours</span>
+                                <p class="text-[11px] text-gray-400 mt-0.5">Obligatoire pour le transport médical (décret 2003-674).</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Register Button -->
-                <button id="btn-register" class="btn-primary w-full text-base justify-center">
-                    <i data-lucide="user-plus" class="w-5 h-5"></i> Créer mon compte
+                <button id="btn-register" class="btn-primary w-full text-base justify-center mt-4">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i> <span id="btn-register-text">Créer mon compte</span>
                 </button>
             </div>
 
@@ -947,9 +1012,11 @@ function renderRegister(container) {
         </div>
     </div>`;
 
-    // Role card toggle + sync hidden select
+    // Role card toggle + show/hide chauffeur section
     const regRoleCards = container.querySelectorAll('.role-card');
     const hiddenSelect = container.querySelector('#register-role');
+    const chauffeurSection = container.querySelector('#chauffeur-expert-section');
+    const btnText = container.querySelector('#btn-register-text');
 
     regRoleCards.forEach(card => {
         card.addEventListener('click', () => {
@@ -957,10 +1024,42 @@ function renderRegister(container) {
             card.classList.add('active');
             card.querySelector('input').checked = true;
             hiddenSelect.value = card.dataset.role;
+
+            if (card.dataset.role === 'CHAUFFEUR') {
+                chauffeurSection.classList.remove('hidden');
+                btnText.textContent = 'Soumettre ma candidature';
+            } else {
+                chauffeurSection.classList.add('hidden');
+                btnText.textContent = 'Créer mon compte';
+            }
         });
     });
 
-    // Register action — uses same IDs as before
+    // Document upload zones
+    const uploadZones = [
+        { zone: '#zone-permis', input: '#file-permis' },
+        { zone: '#zone-identite', input: '#file-identite' },
+        { zone: '#zone-assurance', input: '#file-assurance' },
+        { zone: '#zone-carte-grise', input: '#file-carte-grise' },
+    ];
+
+    uploadZones.forEach(({ zone, input }) => {
+        const zoneEl = container.querySelector(zone);
+        const inputEl = container.querySelector(input);
+        if (!zoneEl || !inputEl) return;
+
+        zoneEl.addEventListener('click', () => inputEl.click());
+        inputEl.addEventListener('change', () => {
+            if (inputEl.files[0]) {
+                const statusEl = zoneEl.querySelector('.file-status');
+                statusEl.textContent = inputEl.files[0].name;
+                statusEl.className = 'file-status text-[10px] text-mint-500 font-semibold';
+                zoneEl.classList.add('uploaded');
+            }
+        });
+    });
+
+    // Register action
     container.querySelector('#btn-register').addEventListener('click', async () => {
         const role = hiddenSelect.value;
         const nom = container.querySelector('#register-nom').value.trim();
@@ -974,6 +1073,31 @@ function renderRegister(container) {
             return;
         }
 
+        // Chauffeur-specific validation
+        if (role === 'CHAUFFEUR') {
+            const experience = parseInt(container.querySelector('#register-experience')?.value || '0');
+            if (experience < 3) {
+                toast('Minimum 3 ans d\'expérience requis.', 'error');
+                return;
+            }
+
+            const permis = container.querySelector('#file-permis')?.files[0];
+            const identite = container.querySelector('#file-identite')?.files[0];
+            const assurance = container.querySelector('#file-assurance')?.files[0];
+            const carteGrise = container.querySelector('#file-carte-grise')?.files[0];
+
+            if (!permis || !identite || !assurance || !carteGrise) {
+                toast('Veuillez fournir tous les documents obligatoires.', 'error');
+                return;
+            }
+
+            const trousse = container.querySelector('#check-secours')?.checked;
+            if (!trousse) {
+                toast('Vous devez certifier posséder une trousse de secours.', 'error');
+                return;
+            }
+        }
+
         try {
             await sInscrire({
                 nom,
@@ -983,12 +1107,18 @@ function renderRegister(container) {
                 role,
                 telephone,
             });
+
+            if (role === 'CHAUFFEUR') {
+                toast('Candidature soumise ! Votre compte est en attente de validation.', 'info');
+            }
             navigate('/login');
         } catch (error) {
             // toast already handled in sInscrire
         }
     });
 }
+
+
 
 // ————————————————————————————————————————————
 //  7. VIEW: PATIENT DASHBOARD
@@ -1905,4 +2035,220 @@ function renderNewRequest(container) {
             // toast already handled in creerDemande
         }
     });
+}
+
+
+// ————————————————————————————————————————————
+//  13. ADMIN API HELPERS
+// ————————————————————————————————————————————
+
+async function chargerChauffeursEnAttente() {
+    try {
+        const url = `${API_URL}/admin/chauffeurs/en-attente`;
+        console.log('[API] GET', url);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Impossible de charger les chauffeurs en attente.');
+        return await response.json();
+    } catch (error) {
+        console.error('[API] ERROR', error);
+        toast(error.message || 'Erreur serveur.', 'error');
+        return [];
+    }
+}
+
+async function validerCompteChauffeur(userId) {
+    try {
+        const url = `${API_URL}/admin/chauffeurs/${userId}/valider`;
+        console.log('[API] PUT', url);
+        const response = await fetch(url, { method: 'PUT' });
+        if (!response.ok) throw new Error('Impossible de valider ce compte.');
+        toast('Compte chauffeur validé avec succès !', 'success');
+        return true;
+    } catch (error) {
+        toast(error.message || 'Erreur lors de la validation.', 'error');
+        return false;
+    }
+}
+
+async function rejeterCompteChauffeur(userId) {
+    try {
+        const url = `${API_URL}/admin/chauffeurs/${userId}/rejeter`;
+        console.log('[API] PUT', url);
+        const response = await fetch(url, { method: 'PUT' });
+        if (!response.ok) throw new Error('Impossible de rejeter ce compte.');
+        toast('Compte chauffeur rejeté.', 'info');
+        return true;
+    } catch (error) {
+        toast(error.message || 'Erreur lors du rejet.', 'error');
+        return false;
+    }
+}
+
+
+// ————————————————————————————————————————————
+//  14. VIEW: ADMIN DASHBOARD
+// ————————————————————————————————————————————
+
+function renderAdminDashboard(container) {
+    if (!AppState.currentUser || AppState.currentUser.role !== 'ADMIN') {
+        toast('Accès réservé aux administrateurs.', 'error');
+        navigate('/login');
+        return;
+    }
+
+    container.innerHTML = `
+    <div class="pt-24 pb-16 px-4 sm:px-6 max-w-6xl mx-auto">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 anim-fade-up">
+            <div>
+                <p class="text-sm text-purple-600 font-semibold tracking-wide uppercase mb-1">Administration</p>
+                <h2 class="section-title">Gestion HealDrive</h2>
+                <p class="text-gray-400 text-sm mt-1">Validez les comptes chauffeurs et gérez la plateforme.</p>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 anim-fade-up" style="animation-delay:.1s">
+            <div class="card-flat px-5 py-4 stat-accent-sand">
+                <div class="flex items-center gap-3 mb-2">
+                    <i data-lucide="user-check" class="w-4 h-4 text-gray-400"></i>
+                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">En attente</span>
+                </div>
+                <p class="text-2xl font-bold text-gray-800" id="admin-count-pending">—</p>
+            </div>
+            <div class="card-flat px-5 py-4 stat-accent-mint">
+                <div class="flex items-center gap-3 mb-2">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-gray-400"></i>
+                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">Validés</span>
+                </div>
+                <p class="text-2xl font-bold text-gray-800" id="admin-count-valid">—</p>
+            </div>
+            <div class="card-flat px-5 py-4 stat-accent-blue">
+                <div class="flex items-center gap-3 mb-2">
+                    <i data-lucide="users" class="w-4 h-4 text-gray-400"></i>
+                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">Patients</span>
+                </div>
+                <p class="text-2xl font-bold text-gray-800" id="admin-count-patients">—</p>
+            </div>
+            <div class="card-flat px-5 py-4 stat-accent-coral">
+                <div class="flex items-center gap-3 mb-2">
+                    <i data-lucide="route" class="w-4 h-4 text-gray-400"></i>
+                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">Trajets total</span>
+                </div>
+                <p class="text-2xl font-bold text-gray-800" id="admin-count-trajets">—</p>
+            </div>
+        </div>
+
+        <!-- Pending Chauffeurs -->
+        <div class="anim-fade-up" style="animation-delay:.2s">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-800 text-[15px] flex items-center gap-2">
+                    <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                    Chauffeurs en attente de validation
+                </h3>
+                <button class="btn-ghost text-xs" onclick="loadAdminData()">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Actualiser
+                </button>
+            </div>
+            <div id="admin-pending-list">
+                <div class="card-flat p-8 text-center text-gray-400 text-sm">
+                    <i data-lucide="loader" class="w-6 h-6 mx-auto mb-2 animate-spin opacity-40"></i>
+                    Chargement...
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    loadAdminData();
+}
+
+async function loadAdminData() {
+    const listEl = document.getElementById('admin-pending-list');
+    if (!listEl) return;
+
+    try {
+        const chauffeurs = await chargerChauffeursEnAttente();
+
+        const pendingCount = document.getElementById('admin-count-pending');
+        if (pendingCount) pendingCount.textContent = String(chauffeurs.length);
+
+        if (chauffeurs.length === 0) {
+            listEl.innerHTML = `
+                <div class="card-flat">
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i data-lucide="check-circle-2" class="w-7 h-7 text-mint-500"></i></div>
+                        <p class="text-gray-400 text-sm">Aucun chauffeur en attente de validation.</p>
+                    </div>
+                </div>`;
+        } else {
+            listEl.innerHTML = `<div class="grid gap-4">${chauffeurs.map(c => adminChauffeurCard(c)).join('')}</div>`;
+        }
+        refreshIcons();
+    } catch (error) {
+        listEl.innerHTML = `<div class="card-flat p-6 text-coral-500 text-sm text-center">Erreur de chargement.</div>`;
+    }
+}
+
+function adminChauffeurCard(c) {
+    const nom = [c.prenom, c.nom].filter(Boolean).join(' ') || c.email;
+    const docs = [
+        { label: 'Permis', key: 'fichierPermis', icon: 'id-card' },
+        { label: 'Carte ID', key: 'fichierIdentite', icon: 'credit-card' },
+        { label: 'Assurance', key: 'fichierAssurance', icon: 'file-shield' },
+        { label: 'Carte grise', key: 'fichierCarteGrise', icon: 'car' },
+    ];
+
+    return `
+    <div class="card-flat p-5 anim-fade-up">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+                        <i data-lucide="user-round" class="w-5 h-5 text-amber-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-800">${nom}</p>
+                        <p class="text-xs text-gray-400">${c.email} · ${c.telephone || 'N/A'}</p>
+                    </div>
+                    <span class="badge badge-waiting ml-auto sm:ml-2">En attente</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-3">
+                    ${docs.map(d => `
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50 text-xs">
+                        <i data-lucide="${d.icon}" class="w-3.5 h-3.5 ${c[d.key] ? 'text-mint-500' : 'text-gray-300'}"></i>
+                        <span class="${c[d.key] ? 'text-gray-700 font-medium' : 'text-gray-400'}">${d.label}</span>
+                        ${c[d.key] ? '<i data-lucide="check" class="w-3 h-3 text-mint-500 ml-auto"></i>' : '<i data-lucide="x" class="w-3 h-3 text-gray-300 ml-auto"></i>'}
+                    </div>`).join('')}
+                </div>
+
+                ${c.anneesExperience ? `
+                <div class="flex items-center gap-2 mt-3 text-xs text-gray-500">
+                    <i data-lucide="award" class="w-3.5 h-3.5 text-brand-500"></i>
+                    <span>${c.anneesExperience} ans d'expérience</span>
+                    ${c.trousseSecours ? '<span class="ml-3 text-mint-500 font-medium">✓ Trousse de secours</span>' : ''}
+                </div>` : ''}
+
+                <p class="text-[11px] text-gray-400 mt-2">Inscrit le ${c.dateCreation ? formatDate(c.dateCreation) : 'N/A'}</p>
+            </div>
+
+            <div class="flex flex-row sm:flex-col gap-2 shrink-0">
+                <button class="btn-primary text-xs flex-1 sm:flex-none justify-center" onclick="handleValider('${c.id}')">
+                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> Valider
+                </button>
+                <button class="btn-ghost text-xs flex-1 sm:flex-none justify-center text-coral-500 border-coral-400/20 hover:bg-red-50" onclick="handleRejeter('${c.id}')">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i> Rejeter
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
+async function handleValider(userId) {
+    const ok = await validerCompteChauffeur(userId);
+    if (ok) loadAdminData();
+}
+
+async function handleRejeter(userId) {
+    const ok = await rejeterCompteChauffeur(userId);
+    if (ok) loadAdminData();
 }
